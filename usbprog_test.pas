@@ -337,7 +337,7 @@ prog_lprog_k: begin
         else string_appends (cmd, '18F2550');
       end;
 otherwise
-    string_appends (cmd, ' -pic 18F2550 -hex (cog)src/picprg/eusb24'(0));
+    string_appends (cmd, ' -pic 18F2550 -hex (cog)src/picprg/eusb34'(0));
     end;
 
   ntry := 0;                           {init number of attempt to perform this operation}
