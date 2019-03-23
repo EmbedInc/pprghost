@@ -6,3 +6,4 @@ setlocal
 call godir "(cog)source/picprg/pprghost"
 
 call build_progs
+call build_doc

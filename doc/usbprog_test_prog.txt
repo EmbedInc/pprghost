@@ -1,0 +1,55 @@
+                           Program USBPROG_TEST
+                               17 Aug 2008
+
+usbprog_test [options]
+
+Production test program for Embed Inc PIC programmers.  The full
+production test procedure for Embed Inc PIC programmers are described in
+separate documents for each programmer type.  These documentation files
+are named <progname>_test, where <progname> is replaced by the name of the
+specific programmer.  For example, the documentation file describing the
+USBProg test procedure is named "usbprog_test".
+
+This document only describes the USBPROG_TEST program.  In normal
+production use the USBPROG_TEST program would not be run directly.
+Separate menu entries exist for each programmer type to run the
+USBPROG_TEST program with parameters suitable for that programmer.  The
+menu entries are START > PROGRAMS > EMBED INC > PRODUCTION TESTS >
+programmer-name.
+
+The USBPROG_TEST command line options are:
+
+  -PROG type
+
+       Specifies the type of programmer to be tested.  The current options
+       are USBPROG, USBPROG2, and LPROG.  The default is USBPROG.
+
+  -BOARD version
+
+       Indicates the circuit board version number of the units to test.
+       This may be ignored depending on programmer type.  The board name
+       and version are written in copper, usually near a corner or edge of
+       the board.  The version number is the digits following the board
+       name.
+
+       For example, the USBProg boards are named EUSB.  The string "EUSB3"
+       etched in copper indicates version 3 of these boards.  On these
+       particular boards, this is written in the lower right corner.  On
+       some boards, the board name and version number are on the back,
+       such as on the LPRG2 boards of the LProg programmer.
+
+       The default is 1, which is unlikely to be correct for production
+       units.
+
+  -PROTO version
+
+       This option is used to specify that a particular prototype version
+       is being tested, as apposed to a production version.  This option
+       should only be used by engineering.  The default is version 0,
+       which always indicates the production version.
+
+       For example, this option is required for some engineering versions
+       of the LProg programmer using board version 2 (LPRG2).  These were
+       loaded with 18F2550 control processors instead of the 18F2455
+       processors that production units are loaded with.  The versions
+       with 18F2550 processors are designated prototype version 1.
