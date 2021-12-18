@@ -33,7 +33,6 @@ var
   pr: picprg_t;                        {state of one use of the PICPRG library}
   ntry: sys_int_machine_t;             {1-N number of attempt to perform operation}
   ser: sys_int_machine_t;              {serial number to assign to unit under test}
-  board: sys_int_machine_t;            {board revision number of target unit}
   proto: sys_int_machine_t;            {1-N prototype version, 0 = production version}
   tmode: sys_int_machine_t;            {test mode ID for compatibility with tester}
   ok: boolean;                         {true/false status from separately run program}
@@ -73,8 +72,7 @@ begin
 *   Initialize before reading the command line.
 }
   string_cmline_init;                  {init for reading the command line}
-  prog := prog_usbprog_k;              {init to testing a USBProg}
-  board := 1;                          {init to board version 1}
+  prog := prog_usbprog2_k;             {init to testing a USBProg2}
   proto := 0;                          {init to production version}
 {
 *   Back here each new command line option.
@@ -85,7 +83,7 @@ next_opt:
   sys_error_abort (stat, 'string', 'cmline_opt_err', nil, 0);
   string_upcase (opt);                 {make upper case for matching list}
   string_tkpick80 (opt,                {pick command line option name from list}
-    '-PROG -BOARD -PROTO',
+    '-PROG -PROTO',
     pick);                             {number of keyword picked from list}
   case pick of                         {do routine for specific option}
 {
@@ -107,15 +105,9 @@ otherwise
     end;
   end;
 {
-*   -BOARD version
-}
-2: begin
-  string_cmline_token_int (board, stat);
-  end;
-{
 *   -PROTO version
 }
-3: begin
+2: begin
   string_cmline_token_int (proto, stat);
   end;
 {
@@ -176,8 +168,8 @@ otherwise
   picprg_isopen := false;              {we don't have PICPRG library open}
 {
 *   Get the serial number of the programmer that will be used to program the
-*   target, and use it to make the full programmer name.  This section sets
-*   the following state:
+*   target, and use it to make the full programmer name.  This section sets the
+*   following state:
 *
 *     TOOLNAME - Full name of programmer used as tool, case sensitive.
 *
@@ -331,13 +323,13 @@ done_prog17v:
   string_append (cmd, toolname);
   case prog of
 prog_lprog_k: begin
-      string_appends (cmd, ' -hex (cog)src/picprg/lprg11 -pic '(0));
+      string_appends (cmd, ' -hex (cog)src/picprg/lprg19 -pic '(0));
       if proto = 0
         then string_appends (cmd, '18F2455')
         else string_appends (cmd, '18F2550');
       end;
 otherwise
-    string_appends (cmd, ' -pic 18F2550 -hex (cog)src/picprg/eusb35'(0));
+    string_appends (cmd, ' -pic 18F2550 -hex (cog)src/picprg/eusb37'(0));
     end;
 
   ntry := 0;                           {init number of attempt to perform this operation}
@@ -450,7 +442,7 @@ retry_after_test:                      {try again to connect to the programmer u
       picprg_close (pr, stat);         {close connection to programmer}
       sys_error_none (stat);           {ingnore errors, REBOOT causes a USB disconnect}
       picprg_isopen := false;          {PICPRG library not open}
-      sys_wait (1.500);                {give programmer time to come back on the USB}
+      sys_wait (3.000);                {give programmer time to come back on the USB}
       goto retry_after_test;           {back and try to connect to programmer again}
       end;
     end;
