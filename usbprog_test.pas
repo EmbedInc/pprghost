@@ -14,6 +14,7 @@ program usbprog_test;
 %include 'file.ins.pas';
 %include 'stuff.ins.pas';
 %include 'picprg.ins.pas';
+%include 'builddate.ins.pas';
 
 const
   max_msg_parms = 3;                   {max parameters we can pass to a message}
@@ -66,8 +67,97 @@ label
   next_opt, err_parm, parm_bad, done_opts,
   loop_toolnum, loop_target, fail, loop_prog8v, done_prog8v, loop_prog17v,
   done_prog17v, loop_progctrl, done_testmode, retry_after_test;
+{
+********************************************************************************
+*
+*   Local function OPEN_PASSED
+*
+*   Try to open a connection to the device under test.  It should be an Embed
+*   PIC programmer with the name "Passed".
+*
+*   Some version of Windows can take a long time to recognize a new USB device,
+*   even after making the sound indicating the device is connected.  This rouine
+*   re-tries for a while to allow the OS time to make the new USB device fully
+*   visible to applications.
+*
+*   On success, the device is opened on PR and PICPRG_ISOPEN is set to TRUE.
+}
+function open_passed                   {open USB connection to "Passed" UUT}
+  :boolean;                            {connection successfully opened}
+  val_param; internal;
+
+const
+  maxtime = 10.0;                      {max time to wait, seconds}
+  retrytime = 0.50;                    {time to wait between retries}
+
+var
+  mem_p: util_mem_context_p_t;         {points to our private memory context}
+  stime: sys_clock_t;                  {starting time}
+  dt: real;                            {time since start}
+  plist: picprg_devs_t;                {list of programmers connected to the system}
+  dev_p: picprg_dev_p_t;               {points to current programmers list entry}
+  stat: sys_err_t;                     {completion status}
+
+label
+  fnd, retry;
 
 begin
+  picprg_isopen := false;              {init PICPRG library not open}
+  util_mem_context_get (util_top_mem_context, mem_p); {get a private mem context}
+
+  picprg_init (pr);                    {init PICPRG library state}
+  pr.devconn := picprg_devconn_enum_k; {open enumeratable named device}
+  string_vstring (pr.prgname, 'Passed'(0), -1); {name of target if tests passed}
+  stime := sys_clock;                  {save the starting time}
+
+  while true do begin                  {back here each new attempt to open library}
+    picprg_list_get (mem_p^, plist);   {get list of programmers connected to system}
+
+(*
+    write (plist.n, ' programmers:');
+    dev_p := plist.list_p;             {init to first list entry}
+    while dev_p <> nil do begin        {scan the list}
+      write (' ', dev_p^.name.str:dev_p^.name.len);
+      dev_p := dev_p^.next_p;          {advance to next list entry}
+      end;                             {back to handle this new list entry}
+    writeln;
+*)
+
+    dev_p := plist.list_p;             {init to first list entry}
+    while dev_p <> nil do begin        {scan the list}
+      if string_equal (dev_p^.name, pr.prgname) {found the target programmer ?}
+        then goto fnd;
+      dev_p := dev_p^.next_p;          {advance to next list entry}
+      end;                             {back to handle this new list entry}
+    goto retry;                        {target not found, wait and try again}
+fnd:                                   {target was found in names list}
+
+    picprg_open (pr, stat);            {try to open connection to programmer}
+    if not sys_error(stat) then begin  {connected to programmer successfully ?}
+      picprg_isopen := true;           {remember PICPRG library is open}
+      exit;
+      end;
+    sys_error_print (stat, '', '', nil, 0);
+
+retry:                                 {failed this time, wait and try again}
+    dt := sys_clock_to_fp2(            {make seconds since start}
+      sys_clock_sub (sys_clock, stime) );
+    if dt >= maxtime then exit;        {time is up, return with existing error}
+    sys_wait (retrytime);              {wait a little while before retrying}
+    end;                               {back and try again}
+
+  util_mem_context_del (mem_p);        {delete our private memory context}
+  open_passed := picprg_isopen;        {return with success/failure indication}
+  end;
+{
+********************************************************************************
+*
+*   Start of main routine.
+}
+begin
+  writeln;
+  writeln ('Program USBPROG_TEST, built ', build_dtm_str);
+  writeln;
 {
 *   Initialize before reading the command line.
 }
@@ -421,14 +511,9 @@ otherwise
   ntry := 0;                           {init number of previous attempt}
 retry_after_test:                      {try again to connect to the programmer under test}
   ntry := ntry + 1;                    {make number of this attempt}
-  picprg_init (pr);                    {init PICPRG library state}
-  pr.devconn := picprg_devconn_enum_k; {open enumeratable named device}
-  string_vstring (pr.prgname, 'Passed'(0), -1); {name of target if tests passed}
-  picprg_open (pr, stat);              {open library to device under test}
-  if sys_stat_match (picprg_subsys_k, picprg_stat_namprognf_k, stat)
-    then goto fail;
-  if sys_error_check (stat, '', '', nil, 0) then goto fail;
-  picprg_isopen := true;               {flag that PICPRG library is now open}
+
+  if not open_passed then goto fail;
+
   picprg_off (pr, stat);               {make sure all outputs are off}
   if sys_error_check (stat, '', '', nil, 0) then goto fail;
   if pr.fwinfo.cmd[71] then begin      {TESTGET command is implemented ?}
