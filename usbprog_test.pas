@@ -113,7 +113,6 @@ begin
   while true do begin                  {back here each new attempt to open library}
     picprg_list_get (mem_p^, plist);   {get list of programmers connected to system}
 
-(*
     write (plist.n, ' programmers:');
     dev_p := plist.list_p;             {init to first list entry}
     while dev_p <> nil do begin        {scan the list}
@@ -121,7 +120,6 @@ begin
       dev_p := dev_p^.next_p;          {advance to next list entry}
       end;                             {back to handle this new list entry}
     writeln;
-*)
 
     dev_p := plist.list_p;             {init to first list entry}
     while dev_p <> nil do begin        {scan the list}
